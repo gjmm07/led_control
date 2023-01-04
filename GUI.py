@@ -7,7 +7,7 @@ from LED_array import LEDArray
 # define constants
 mat = LEDArray()
 mat.read_from_file()
-ARRAY_SIZE = 3, 3
+ARRAY_SIZE = mat.return_size()
 COLORS = ("RED", "BLUE", "GREEN")
 
 
@@ -28,14 +28,14 @@ class MenuObject:
                 return i
 
 
-row = MenuObject(name="ROW", slaves=("A", "B"), last=True)
-column = MenuObject(name="COLUMN", slaves=("A", "B"), last=True)
-color = MenuObject(name="COLOR", slaves=COLORS, last=True)
+row = {"ROW": ["1", "2", "3"]}
+column = {"Column": ["1", "2", "3"]}
+color = {"COLOR": ["RED", "BLUE", "GREEN"]}
 
-select_all = MenuObject(name="SELECT ALL", slaves=color)
-select_single = MenuObject(name="SELECT SINGLE", slaves=(row, column, color))
-select_row = MenuObject(name="SELECT ROW", slaves=(row, color))
-select_column = MenuObject(name="SELECT COLUMN", slaves=(column, color))
+select_all = MenuObject(name="SELECT ALL", slaves=color, last=True)
+select_single = MenuObject(name="SELECT SINGLE", slaves=(row | column | color), last=True)
+select_row = MenuObject(name="SELECT ROW", slaves=(row | color), last=True)
+select_column = MenuObject(name="SELECT COLUMN", slaves=(column | color), last=True)
 static = MenuObject(name="STATIC", slaves=(select_column, select_row, select_single, select_all))
 
 select_rain = MenuObject(name="SELECT RAIN", slaves=None, last=True)
@@ -46,55 +46,36 @@ main_menu = MenuObject(name="MAIN MENU", slaves=(dynamic, static))
 
 
 def menu(master_order):
-    selection = ""
     while True:
         master = master_order[-1]
-        selected_items = yield master.last, selection, master.slaves
         if not master.last:
-            selection = button_select(master.return_slaves_name(), [x.name for x in master_order], selected_items)
+            selection = button_select(master.return_slaves_name(), [x.name for x in master_order])
             master_order.append(master.return_slave(selection))
         else:
-            selection = button_select(master.return_slaves_name(), [x.name for x in master_order])
-            del master_order[-1]
+            selection = dict.fromkeys(master.slaves.keys(), None)
+            for key, attribute in master.slaves.items():
+                selection[key] = button_select(header=key, items=attribute)
+            master_order = yield master_order[-1].name, selection
         menu(master_order)
 
 
 def main():
+    a = menu([main_menu])
+    name, sel = next(a)
     while True:
-        first_over_last, input_, key = False, False, ""
-        dict_ = {}
-        a = menu([main_menu])
-        next(a)
-        while True:
-            last, selection, slaves = a.send(dict_)
-            if not first_over_last:
-                if slaves[0].last:
-                    dict_ = dict.fromkeys([s.name for s in slaves], [False, ""])
-                    first_over_last = True
-            else:
-                if last:
-                    input_, key = True, selection
-                elif input_:
-                    dict_[key] = [True, selection]
-                    input_ = False
-            if False not in [s[0] for s in list(dict_.values())] and dict_ != {}:
-                print(dict_)
-                break
+        print(name, sel)
+        name, sel = a.send([main_menu])
 
 
 def turn_on_row():
     print("turn on row")
 
 
-def button_select(items, header, s=None):
+def button_select(items, header):
     print("\n")
     print(header)
-    if s != {} and s is not None:
-        z = [item + "-d" if bool_ else item for item, bool_ in zip(items, [x[0] for x in list(s.values())])]
-    else:
-        z = items
     while True:
-        selection = input("Please select from the following {}: ".format(z))
+        selection = input("Please select from the following {}: ".format(items))
         if selection.upper() in str(items):
             return selection.upper()
         elif selection.upper() == "BACK":

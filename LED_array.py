@@ -2,8 +2,11 @@ from define_leds import LED
 
 
 class LEDArray:
-    def __init__(self):
-        self.array = []
+    def __init__(self, array=None):
+        if array is None:
+            self.array = []
+        else:
+            self.array = array
 
     def insert(self, place, led):
         self.array[place[0]][place[1]][1] = led
@@ -39,6 +42,13 @@ class LEDArray:
 
     def update_led_array(self):
         return [[x.state for x in self.array[i]] for i in range(len(self.array))]
+
+    def return_size(self):
+        return len(self.array), len(self.array[0])
+
+    def __getitem__(self, item):
+        rows, cols = item
+        return LEDArray(array=[[1, 2, 3], [5, 6, 7]])
 
 
 if __name__ == "__main__":
