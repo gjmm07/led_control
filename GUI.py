@@ -5,10 +5,8 @@ from LED_array import LEDArray
 #
 
 # define constants
-mat = LEDArray()
-mat.read_from_file()
-ARRAY_SIZE = mat.return_size()
 COLORS = ("RED", "BLUE", "GREEN")
+mat = LEDArray("led_data.txt")
 
 
 class MenuObject:
@@ -29,13 +27,14 @@ class MenuObject:
 
 
 row = {"ROW": ["1", "2", "3"]}
-column = {"Column": ["1", "2", "3"]}
+column = {"COLUMN": ["1", "2", "3"]}
 color = {"COLOR": ["RED", "BLUE", "GREEN"]}
+state = {"STATE": ["ON", "OFF"]}
 
-select_all = MenuObject(name="SELECT ALL", slaves=color, last=True)
-select_single = MenuObject(name="SELECT SINGLE", slaves=(row | column | color), last=True)
-select_row = MenuObject(name="SELECT ROW", slaves=(row | color), last=True)
-select_column = MenuObject(name="SELECT COLUMN", slaves=(column | color), last=True)
+select_all = MenuObject(name="SELECT ALL", slaves=color | state, last=True)
+select_single = MenuObject(name="SELECT SINGLE", slaves=(row | column | color | state), last=True)
+select_row = MenuObject(name="SELECT ROW", slaves=(row | color | state), last=True)
+select_column = MenuObject(name="SELECT COLUMN", slaves=(column | color | state), last=True)
 static = MenuObject(name="STATIC", slaves=(select_column, select_row, select_single, select_all))
 
 select_rain = MenuObject(name="SELECT RAIN", slaves=None, last=True)
@@ -64,11 +63,15 @@ def main():
     name, sel = next(a)
     while True:
         print(name, sel)
+        sel["STATE"] = True if sel["STATE"] == "ON" else False
+        if name == "SELECT ROW":
+            mat[int(sel.get("ROW")), :] = sel.get("STATE"), sel.get("COLOR")
+        elif name == "SELECT COLUMN":
+            mat[:, int(sel.get("COLUMN"))] = sel.get("STATE"), sel.get("COLOR")
+        elif name == "SELECT ALL":
+            mat[:, :] = sel.get("STATE"), sel.get("COLOR")
+        mat.print_color_array()
         name, sel = a.send([main_menu])
-
-
-def turn_on_row():
-    print("turn on row")
 
 
 def button_select(items, header):

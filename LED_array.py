@@ -2,23 +2,10 @@ from define_leds import LED
 
 
 class LEDArray:
-    def __init__(self, array=None):
-        if array is None:
-            self.array = []
-        else:
-            self.array = array
-
-    def insert(self, place, led):
-        self.array[place[0]][place[1]][1] = led
-
-    def display_array_state(self):
-        for row in self.array:
-            print(row[0])
-
-    def read_from_file(self):
-        row_index = 0
-        row = []
-        with open("led_data.txt", "r") as f:
+    def __init__(self, file):
+        self.array = []
+        row_index, row = 0, []
+        with open(file, "r") as f:
             for line in f.readlines():
                 d = dict.fromkeys(["gpio", "id"], 0)
                 for item in line.split(","):
@@ -34,23 +21,26 @@ class LEDArray:
                 row.append(LED(name="A", gpio_pin=d["gpio"], identi=d["id"]))
             self.array.append(row)
 
-    def turn_on_row(self, row):
-        [led.set_state(True) for led in self.array[row]]
+    def __setitem__(self, key, value):
+        if type(key[0]) == int and type(key[1]) == slice:
+            [led.change_state(value[0], value[1]) for led in self.array[key[0]][key[1]]]
+        elif type(key[0]) == slice and type(key[1]) == int:
+            [led[key[1]].change_state(value[0], value[1]) for led in self.array[key[0]]]
+        elif type(key[0]) == slice and type(key[1]) == slice:
+            [[led.change_state(value[0], value[1]) for led in row[key[1]]] for row in self.array[key[0]]]
+        else:
+            self.array[key[0]][key[1]].change_state(value[0], value[1])
 
-    def turn_on_col(self, col):
-        [led[col].set_state(True) for led in self.array]
-
-    def update_led_array(self):
+    def return_state_array(self):
         return [[x.state for x in self.array[i]] for i in range(len(self.array))]
 
-    def return_size(self):
-        return len(self.array), len(self.array[0])
-
-    def __getitem__(self, item):
-        rows, cols = item
-        return LEDArray(array=[[1, 2, 3], [5, 6, 7]])
+    def print_color_array(self):
+        [print([x.color if x.state else "x" for x in self.array[i]]) for i in range(len(self.array))]
 
 
 if __name__ == "__main__":
-    m = LEDArray()
-    m.read_from_file()
+    mat = LEDArray("led_data.txt")
+    mat[1, 1] = True, "Red"
+    mat[0:, ] = True, "Blue"
+    print(mat.return_state_array())
+    print(mat.return_color_array())
