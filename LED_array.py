@@ -22,25 +22,32 @@ class LEDArray:
             self.array.append(row)
 
     def __setitem__(self, key, value):
-        if type(key[0]) == int and type(key[1]) == slice:
-            [led.change_state(value[0], value[1]) for led in self.array[key[0]][key[1]]]
-        elif type(key[0]) == slice and type(key[1]) == int:
-            [led[key[1]].change_state(value[0], value[1]) for led in self.array[key[0]]]
-        elif type(key[0]) == slice and type(key[1]) == slice:
-            [[led.change_state(value[0], value[1]) for led in row[key[1]]] for row in self.array[key[0]]]
-        else:
-            self.array[key[0]][key[1]].change_state(value[0], value[1])
+        """ Converts the given key to a slice and switches the corresponding LED in a given color on or off"""
+        rows = key[0] if type(key[0]) != int else slice(key[0], key[0]+1)
+        cols = key[1] if type(key[1]) != int else slice(key[1], key[1]+1)
+        state, color = value
+        for row in self.array[rows]:
+            for led in row[cols]:
+                led.change_state(state, color)
+        # [[led.change_state(value[0], value[1]) for led in r[cols]] for r in self.array[rows]]
 
     def return_state_array(self):
+        """ Returns an array with the current led state"""
         return [[x.state for x in self.array[i]] for i in range(len(self.array))]
 
     def print_color_array(self):
-        [print([x.color if x.state else "x" for x in self.array[i]]) for i in range(len(self.array))]
+        """ Prints the color of the LED Array. If a specific LED state is off an x will be printed """
+        [print([x.color.ljust(8) if x.state else "x".ljust(8) for x in self.array[i]]) for i in range(len(self.array))]
+
+    def rain(self):
+        print("hello")
+
+    def sideways(self):
+        print("sidways")
 
 
 if __name__ == "__main__":
     mat = LEDArray("led_data.txt")
     mat[1, 1] = True, "Red"
-    mat[0:, ] = True, "Blue"
+    mat[0, :] = True, "Blue"
     print(mat.return_state_array())
-    print(mat.return_color_array())
